@@ -11,8 +11,6 @@ export class WebServer
         var express = require('express');
         var app = express();
         
-        this.socketServer = new SocketServer(handler);
-
         app.get('/',  (req, res) => {
             this.loadHandSeller(res);
         })
