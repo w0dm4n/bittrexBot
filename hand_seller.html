@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Bittrex MoonTaker</title>
+    </head>
+ 
+    <body>
+        <center>
+            <div id="percentage" style="display:none";> 
+                Price percentage: 0%
+            </div>
+            <br/> <br/>
+            <div id="sell" style="display:none;"> 
+                <button type="button" onClick="sellCoin()" style="font-size:24px;">Sell and go to the moon !</button>
+                <br/><br/>
+            </div>
+
+            <div id="content">
+                Waiting for an open order..
+            </div>
+
+          
+        </center>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.0/socket.io.js"></script>
+        <script>
+            function getPercentageChange(oldNumber, newNumber){
+                var decreaseValue = oldNumber - newNumber;
+            
+                return (decreaseValue / oldNumber) * 100;
+            }
+
+            function toFixed(value, precision) {
+                var power = Math.pow(10, precision || 0);
+                return String(Math.round(value * power) / power);
+            }
+
+            var host = `http://${window.location.hostname}:3031`
+            this.socket = io.connect(host);
+            this.firstSell = true;
+            this.firstPrice = null;
+            this.baseSymbol = "BTC"
+            this.socket.on('message', (content) => {
+                if (content) {
+                    switch (content.action) {
+                        case "buying":
+                            document.getElementById("content").innerHTML = `Going to buy on market ${content.coin}`;
+                        break;
+
+                        case "selling":
+                        if (this.firstPrice != null) {
+                            var percent = getPercentageChange(content.price, this.firstPrice);
+                            document.getElementById("percentage").innerHTML = `Price percentage: ${toFixed(percent, 4)}%`;
+                        }
+                        if (this.firstSell) {
+                            document.getElementById("sell").style.display = "block";
+                            document.getElementById("content").innerHTML = `Last price of ${content.coin} is <span style="color:green;">${content.price}</span> ${this.baseSymbol}`;
+                            this.firstSell = false;
+                        } else {
+                            let current = document.getElementById("content").innerHTML;
+                            document.getElementById("content").innerHTML = `Last price of ${content.coin} is <span style="color:green;">${content.price}</span> ${this.baseSymbol}` + "<br/><hr>" + current;
+                        }
+                        break;
+
+                        case "sold":
+                            document.getElementById("content").innerHTML = `${content.coin} sold at ${content.price} ${this.baseSymbol}`;
+                        break;
+
+                        case "first_price":
+                        console.log('RECEIVED !')
+                            this.firstPrice = content.price;
+                            document.getElementById("percentage").style.display = "block";
+                            console.log(`Buy price was ${this.firstPrice} for ${content.coin}`)
+                            if (content.coin.indexOf("BTC") != -1) {
+                                this.baseSymbol = "BTC"
+                            } else if (content.coin.indexOf("ETH") != -1) {
+                                this.baseSymbol = "ETH"
+                            }
+                        break;
+                    }
+                    console.log(content);
+                }
+            });
+
+            function sellCoin()
+            {
+                console.log(this.socket.emit("message", {action: "sell"}));
+            }
+
+        </script>
+    </body>
+</html>
