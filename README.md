@@ -1,0 +1,1 @@
+#Bot for detecting coin peaks on Bittrex exchange and buying coins
